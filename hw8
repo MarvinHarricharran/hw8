@@ -1,0 +1,141 @@
+Alicia Persad,Flamur Kukaj, Abdullah Al Aman, Marvin Harricharran
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(haven)
+library(readr)
+
+
+setwd("C:/Users/marvi/Downloads/acs_couples")
+load("ACS_2021_couples.Rdata")
+
+acs2021_couples$RACE <- fct_recode(as.factor(acs2021_couples$RACE),
+                                   "White" = "1",
+                                   "Black" = "2",
+                                   "American Indian or Alaska Native" = "3",
+                                   "Chinese" = "4",
+                                   "Japanese" = "5",
+                                   "Other Asian or Pacific Islander" = "6",
+                                   "Other race" = "7",
+                                   "two races" = "8",
+                                   "three races" = "9")
+
+acs2021_couples$h_race <- fct_recode(as.factor(acs2021_couples$h_race),
+                                     "White" = "1",
+                                     "Black" = "2",
+                                     "American Indian or Alaska Native" = "3",
+                                     "Chinese" = "4",
+                                     "Japanese" = "5",
+                                     "Other Asian or Pacific Islander" = "6",
+                                     "Other race" = "7",
+                                     "two races" = "8",
+                                     "three races" = "9")
+
+acs2021_couples$HISPAN <- fct_recode(as.factor(acs2021_couples$HISPAN),
+                                     "Not Hispanic" = "0",
+                                     "Mexican" = "1",
+                                     "Puerto Rican" = "2",
+                                     "Cuban" = "3",
+                                     "Other" = "4")
+acs2021_couples$h_hispan <- fct_recode(as.factor(acs2021_couples$h_hispan),
+                                       "Not Hispanic" = "0",
+                                       "Mexican" = "1",
+                                       "Puerto Rican" = "2",
+                                       "Cuban" = "3",
+                                       "Other" = "4")
+
+
+trad_data <- acs2021_couples %>% filter( (SEX == "Female") & (h_sex == "Male") )
+
+trad_data$he_more_than_5yrs_than_her <- as.numeric(trad_data$age_diff < -5)
+
+
+table(trad_data$he_more_than_5yrs_than_her,cut(trad_data$age_diff,c(-100,-10, -5, 0, 5, 10, 100)))
+
+ols_out1 <- lm(he_more_than_5yrs_than_her ~ educ_hs + educ_somecoll + educ_college + educ_advdeg + AGE, data = trad_data)
+summary(ols_out1)
+
+ols_out2 <- lm(he_more_than_5yrs_than_her ~ educ_numeric + h_educ_numeric + AGE, data = trad_data)
+summary(ols_out2)
+ols_out3 <- lm(he_more_than_5yrs_than_her ~ EDUC + h_educ + AGE, data = trad_data)
+summary(ols_out3)
+
+
+ols_out4 <- lm(he_more_than_5yrs_than_her ~ educ_numeric + h_educ_numeric + AGE + STATEFIP, data = trad_data)
+summary(ols_out4)
+ols_out5 <- lm(he_more_than_5yrs_than_her ~ educ_numeric + h_educ_numeric + AGE + REGION, data = trad_data)
+summary(ols_out5)
+
+
+
+ggplot(trad_data, aes(x = educ_numeric, y = he_more_than_5yrs_than_her)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+  labs(title = "Probability of Being More than 5 Years Older by Education Level",
+       x = "Education Level",
+       y = "Probability") +
+  theme_minimal()
+
+
+
+library(car)
+
+
+ols_out <- lm(he_more_than_5yrs_than_her ~ educ_numeric + h_educ_numeric + AGE, data = trad_data)
+
+
+linearHypothesis(ols_out, "educ_numeric = 0")
+
+
+linearHypothesis(ols_out, c("educ_numeric = 0", "h_educ_numeric = 0"))
+
+
+ggplot(trad_data, aes(x = AGE, y = he_more_than_5yrs_than_her)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+  labs(title = "Probability of Being More than 5 Years Older",
+       x = "Age of Woman",
+       y = "Probability (1 = He is Older by 5+ Years)") +
+  theme_minimal()
+
+These lines of code create a graph focusing on the relationship between education level and the probability of the man in the household being 5 or more years older than the woman. Since the line is decreasing, this means that as the education level increases, the probability of the man being 5 years older than the partner decreases. Some theories regarding this result are that higher education levels create relationships between people who are closer in age.
+
+
+
+library(car)
+
+
+ols_out <- lm(he_more_than_5yrs_than_her ~ educ_numeric + h_educ_numeric + AGE, data = trad_data)
+
+
+linearHypothesis(ols_out, "educ_numeric = 0")
+
+Based on this hypothesis test, the f-statistic was 1149.5. This means that the variable educ_numeric has a great impact on the model. The p-value was 2.2e-16 which means that the result was highly significant.
+
+
+linearHypothesis(ols_out, c("educ_numeric = 0", "h_educ_numeric = 0"))
+
+For this hypothesis test, we come to the conclusion that educ_numeric and h_educ_numeric are very important when trying to determine if the man is 5 years older than the partner in a household. This was because the f-stat and p-value were 1235.7 and 2.2e-16 respectively.
+
+
+ggplot(trad_data, aes(x = AGE, y = he_more_than_5yrs_than_her)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), se = FALSE) +
+  labs(title = "Probability of Being More than 5 Years Older",
+       x = "Age of Woman",
+       y = "Older by 5 Years") +
+  theme_minimal()
+
+This graph shows the relationship between the woman’s age and the size of the age gap between partners. As the woman’s age increases, the probability of the man being more than 5 years older decreases, suggesting that the age gap is only significant among younger women.
+
+
+
+Two Articles:
+#Causes of Flight Delays
+#"Bad weather and flight delays: The impact of sudden and slow onset weather events"
+#This article examines how sudden and gradual weather events affect flight departure delays, at major U.S. airports. The results show that severe weather can increase delays by up to 23 minutes, with impacts varying by season, airport capacity, and aircraft concentration. The article also highlights the economic importance of managing weather-related disruptions.
+  
+  
+#"Analysis of the effect of extreme weather on the US domestic air network. A delay and cancellation propagation network approach"
+#This article analyzes how flight delays and cancellations distrub in the airlines. The articles focuses on patterns during regular and extreme weather conditions. Hub airports typically absorb delays, while extreme weather increases network-wide cancellations, with hubs playing a key role in managing cancellations due to their resources.
+
